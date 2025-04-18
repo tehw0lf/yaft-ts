@@ -1,0 +1,36 @@
+{
+  "name": "@tehw0lf/yaft",
+  "version": "0.0.1",
+  "description": "YaFT - Feature Toggles using Go&PostgreSQL or any source!",
+  "files": [
+    "dist"
+  ],
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc && npm pkg delete devDependencies && cp package.json dist/yaft"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tehw0lf/yaft-ts.git"
+  },
+  "keywords": [
+    "feature",
+    "toggle",
+    "yaft",
+    "featuretoggle"
+  ],
+  "author": "tehw0lf",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tehw0lf/yaft-ts/issues"
+  },
+  "homepage": "https://github.com/tehw0lf/yaft-ts#readme",
+  "dependencies": {
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "axios": "^1.8.4",
+    "typescript": "^4.2.3"
+  }
+}

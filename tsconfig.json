@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "declaration": true,
+    "outDir": "./dist/yaft"
+  },
+  "include": ["src/*.ts"]
+}
