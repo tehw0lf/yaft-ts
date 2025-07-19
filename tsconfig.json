@@ -4,7 +4,7 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "declaration": true,
-    "outDir": "./dist/yaft"
+    "outDir": "./dist"
   },
   "include": ["src/*.ts"]
 }

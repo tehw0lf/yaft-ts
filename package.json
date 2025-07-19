@@ -1,15 +1,10 @@
 {
   "name": "@tehw0lf/yaft",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "YaFT - Feature Toggles using Go&PostgreSQL or any source!",
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
   "type": "commonjs",
   "scripts": {
-    "build": "tsc && npm pkg delete devDependencies && cp package.json dist/yaft"
+    "build": "tsc && npm pkg delete devDependencies && cp package.json dist/"
   },
   "repository": {
     "type": "git",
