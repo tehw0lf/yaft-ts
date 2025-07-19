@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "YaFT - Feature Toggles using Go&PostgreSQL or any source!",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "type": "commonjs",
   "scripts": {

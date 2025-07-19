@@ -19,7 +19,6 @@ jobs:
       build_branch: "run build"
       build_main: "run build"
       event_name: ${{ github.event_name }}
-      libraries: "yaft"
       artifact_path: "dist"
       library_path: "dist"
     secrets:
