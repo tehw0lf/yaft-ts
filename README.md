@@ -1,6 +1,14 @@
 # YaFT for TypeScript
 
+<div align="center">
+  <img src="./logo.svg" alt="YaFT Logo" width="140">
+</div>
+
+---
+
 This provides a client for YaFT which aims to bring simple feature toggles for Methods and Classes to Typescript.
+
+---
 
 ## Installation
 
@@ -88,3 +96,8 @@ export type Feature = {
   disabledAt: string;
 };
 ```
+
+# Licenses
+
+- Code: MIT License
+- Logo/Branding: All rights reserved

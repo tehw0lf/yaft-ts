@@ -4,7 +4,7 @@
   "description": "YaFT - Feature Toggles using Go&PostgreSQL or any source!",
   "type": "commonjs",
   "scripts": {
-    "build": "tsc && npm pkg delete devDependencies && cp package.json dist/"
+    "build": "tsc && npm pkg delete devDependencies && cp package.json README.md logo.svg dist/"
   },
   "repository": {
     "type": "git",
