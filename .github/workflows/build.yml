@@ -16,6 +16,7 @@ jobs:
       packages: write
     with:
       tool: "npm"
+      test: "run test"
       build_branch: "run build"
       build_main: "run build"
       event_name: ${{ github.event_name }}
