@@ -1,6 +1,6 @@
 {
   "name": "@tehw0lf/yaft",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "YaFT - Feature Toggles using Go&PostgreSQL or any source!",
   "type": "commonjs",
   "scripts": {
