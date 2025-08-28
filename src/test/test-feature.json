@@ -1,0 +1,20 @@
+{
+  "myClassToggle": {
+    "key": "myClassToggle",
+    "value": "false",
+    "activeAt": "",
+    "disabledAt": ""
+  },
+  "myMethodToggle": {
+    "key": "myMethodToggle",
+    "value": "true",
+    "activeAt": "",
+    "disabledAt": ""
+  },
+  "myOtherMethodToggle": {
+    "key": "myOtherMethodToggle",
+    "value": "false",
+    "activeAt": "",
+    "disabledAt": ""
+  }
+}
