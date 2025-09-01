@@ -6,6 +6,7 @@ import axios from 'axios';
 // Mock axios for API provider tests
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+mockedAxios.get = jest.fn();
 
 describe('Error Handling and Edge Cases', () => {
   let mockProvider: FeatureProvider<boolean>;
@@ -18,6 +19,8 @@ describe('Error Handling and Edge Cases', () => {
     };
     FeatureToggleBase.featureProvider = mockProvider;
     jest.clearAllMocks();
+    // Reset axios mock
+    (mockedAxios.get as jest.Mock).mockReset();
   });
 
   describe('Provider Initialization Errors', () => {

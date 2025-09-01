@@ -7,6 +7,9 @@ module.exports = {
   globals: {},
   coverageDirectory: 'coverage/yaft',
   testEnvironment: "node",
+  testMatch: [
+    '<rootDir>/src/**/*.spec.ts'
+  ],
   transform: {
     "^.+\.tsx?$": ["ts-jest",{}],
   },
