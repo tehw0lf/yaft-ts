@@ -5,7 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "tsc && npm pkg delete devDependencies && cp package.json README.md logo.svg dist/",
-    "test": "jest"
+    "test": "npx jest"
   },
   "repository": {
     "type": "git",
