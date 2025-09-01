@@ -9,6 +9,7 @@ export type Feature = {
   value: string;
   activeAt: string;
   disabledAt: string;
+  tags?: string[];
 };
 
 export interface FeatureProvider<T> {
