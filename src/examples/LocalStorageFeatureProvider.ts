@@ -22,9 +22,26 @@ export class LocalStorageFeatureProvider implements FeatureProvider<Feature> {
 
     if (feature === undefined || feature === null) return false;
 
-    if (Date.now() >= Date.parse(feature.disabledAt)) return false;
-    if (Date.now() >= Date.parse(feature.activeAt)) return true;
+    // First check: value must be "true"
+    if (feature.value !== "true") return false;
 
-    return JSON.parse(feature.value);
+    // Second check: if activeAt is set and in future, not yet active
+    if (feature.activeAt && feature.activeAt !== "") {
+      const activeTime = Date.parse(feature.activeAt);
+      if (!isNaN(activeTime) && Date.now() < activeTime) {
+        return false;
+      }
+    }
+
+    // Third check: if disabledAt is set and in past, already disabled
+    if (feature.disabledAt && feature.disabledAt !== "") {
+      const disabledTime = Date.parse(feature.disabledAt);
+      if (!isNaN(disabledTime) && Date.now() >= disabledTime) {
+        return false;
+      }
+    }
+
+    // All checks passed, feature is enabled
+    return true;
   }
 }

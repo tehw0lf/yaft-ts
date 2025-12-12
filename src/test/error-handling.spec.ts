@@ -139,9 +139,8 @@ describe('Error Handling and Edge Cases', () => {
         }
       })();
 
-      expect(() => {
-        provider.isEnabled('invalidBoolean');
-      }).toThrow(); // JSON.parse should throw for invalid boolean strings
+      // New behavior: safely returns false for any value that is not "true"
+      expect(provider.isEnabled('invalidBoolean')).toBe(false);
     });
   });
 
