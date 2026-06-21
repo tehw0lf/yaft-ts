@@ -25,3 +25,4 @@ jobs:
       build_main: "run build"
       artifact_path: "dist"
       library_path: "dist"
+      npm_audit_omit_dev: true

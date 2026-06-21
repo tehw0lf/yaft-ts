@@ -288,12 +288,12 @@ describe('FeatureToggle Decorator Behavior', () => {
         throw new Error('Provider error');
       });
 
-      expect(() => {
-        class TestClass {
-          @FeatureToggle('errorFeature')
-          testMethod() {}
-        }
-      }).toThrow('Provider error');
+      class TestClass {
+        @FeatureToggle('errorFeature')
+        testMethod() {}
+      }
+
+      expect(() => new TestClass().testMethod()).toThrow('Provider error');
     });
 
     it('should handle undefined/null feature keys', () => {
