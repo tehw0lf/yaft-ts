@@ -5,7 +5,7 @@
     "experimentalDecorators": true,
     "declaration": true,
     "rootDir": "./src",
-    "outDir": "./dist",
+    "outDir": "./dist/yaft",
     "types": ["node"],
     "lib": ["ES2022"]
   },

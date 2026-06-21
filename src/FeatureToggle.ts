@@ -25,7 +25,6 @@ export function FeatureToggle(key: string, fallback?: any) {
   if (!FeatureToggleBase.featureProvider) {
     throw new Error("FeatureToggleProvider not set");
   }
-  const isEnabled = FeatureToggleBase.featureProvider.isEnabled(key);
   return (
     target: any,
     propertyKey?: string,
@@ -36,6 +35,7 @@ export function FeatureToggle(key: string, fallback?: any) {
       const originalMethod = descriptor.value;
 
       descriptor.value = function (...args: any[]) {
+        const isEnabled = FeatureToggleBase.featureProvider.isEnabled(key);
         if (isEnabled) {
           return originalMethod.apply(this, args);
         } else {
@@ -50,6 +50,7 @@ export function FeatureToggle(key: string, fallback?: any) {
       const originalConstructor = target;
       let newConstructor: any;
 
+      const isEnabled = FeatureToggleBase.featureProvider.isEnabled(key);
       if (isEnabled) {
         newConstructor = originalConstructor;
       } else {

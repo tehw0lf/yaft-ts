@@ -317,8 +317,11 @@ describe('Error Handling and Edge Cases', () => {
       }
 
       const instance = new TestClass();
-      
+
       expect(instance.method1()).toBe(1);
+      expect(instance.method2()).toBe(2);
+      expect(instance.method3()).toBe(3);
+      expect(instance.method4()).toBe(4);
       expect(instance.method5()).toBe(5);
       expect(mockProvider.isEnabled).toHaveBeenCalledTimes(5);
     });

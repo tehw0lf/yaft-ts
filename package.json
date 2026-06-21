@@ -4,7 +4,7 @@
   "description": "YaFT - Feature Toggles using Go&PostgreSQL or any source!",
   "type": "commonjs",
   "scripts": {
-    "build": "tsc && npm pkg delete devDependencies && cp package.json README.md logo.svg dist/",
+    "build": "tsc && cp package.json README.md logo.svg dist/yaft/ && npm pkg delete devDependencies --prefix dist/yaft",
     "test": "npx jest"
   },
   "repository": {
@@ -25,5 +25,14 @@
   "homepage": "https://github.com/tehw0lf/yaft-ts#readme",
   "dependencies": {
     "reflect-metadata": "0.2.2"
+  },
+  "devDependencies": {
+    "@types/jest": "30.0.0",
+    "@types/node": "24.1.0",
+    "axios": "1.18.0",
+    "jest": "30.4.2",
+    "ts-jest": "29.4.11",
+    "ts-node": "10.9.2",
+    "typescript": "6.0.3"
   }
 }
