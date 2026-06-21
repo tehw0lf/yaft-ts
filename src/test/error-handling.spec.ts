@@ -364,7 +364,7 @@ describe('Error Handling and Edge Cases', () => {
           'objectFeature': { enabled: true },
           'nullFeature': null,
           'undefinedFeature': undefined
-        },
+        } as Record<string, unknown>,
         getConfig: jest.fn(),
         isEnabled: (key: string) => {
           const value = mixedProvider.data[key];

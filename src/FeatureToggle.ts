@@ -40,8 +40,8 @@ export function FeatureToggle(key: string, fallback?: any) {
           return originalMethod.apply(this, args);
         } else {
           return fallback !== undefined
-            ? fallback.apply(this, args)
-            : (() => {}).apply(this, args);
+            ? fallback.apply(this, args as [])
+            : (() => {}).apply(this, args as []);
         }
       };
       return descriptor;

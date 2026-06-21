@@ -5,7 +5,7 @@ import { FeatureProvider } from "../FeatureToggle";
 export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   apiUrl: string;
   baseUUID: string;
-  data: Record<string, boolean>;
+  data: Record<string, boolean> = {};
   collectionHash = "";
 
   constructor(apiUrl: string, baseUUID: string) {

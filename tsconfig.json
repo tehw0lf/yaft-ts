@@ -4,7 +4,10 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "declaration": true,
-    "outDir": "./dist"
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "types": ["node"],
+    "lib": ["ES2022"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/test/**/*"]
