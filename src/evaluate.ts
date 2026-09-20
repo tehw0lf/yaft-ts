@@ -23,7 +23,27 @@ export const systemClock: Clock = () => Date.now();
  * port evaluated it, so such values are ignored rather than guessed at.
  */
 const RFC3339_WITH_OFFSET =
-  /^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$/;
+  /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(\.\d+)?([Zz]|[+-]\d{2}:\d{2})$/;
+
+/** Days per month, index 1-12; February is handled by the leap-year branch. */
+const DAYS_IN_MONTH = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+function isRealDate(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12 || day < 1) return false;
+  const max = month === 2 && isLeapYear(year) ? 29 : DAYS_IN_MONTH[month];
+  return day <= max;
+}
+
+function isRealTime(hour: number, minute: number, second: number): boolean {
+  // RFC 3339 permits second 60 for a leap second; it is allowed through here
+  // and then rejected by the NaN guard, because Date.parse cannot represent
+  // one. The value ends up ignored either way.
+  return hour <= 23 && minute <= 59 && second <= 60;
+}
 
 /**
  * Parses an RFC 3339 timestamp with an offset.
@@ -36,16 +56,26 @@ const RFC3339_WITH_OFFSET =
 export function parseTimestamp(value: string | null | undefined): number | undefined {
   if (value === null || value === undefined || value === "") return undefined;
 
-  if (!RFC3339_WITH_OFFSET.test(value)) {
+  const match = RFC3339_WITH_OFFSET.exec(value);
+  if (!match) {
     console.warn(
       `YaFT: ignoring "${value}", expected RFC 3339 with an offset (e.g. 2026-09-18T15:00:00Z)`
     );
     return undefined;
   }
 
+  // The pattern only checks the shape, and Date.parse does not reject an
+  // impossible calendar date -- it rolls it over, turning 2027-02-30 into
+  // 2027-03-02. Silently shifting a bound by days is worse than ignoring it,
+  // so the components are range-checked first.
+  const [, year, month, day, hour, minute, second] = match;
+  if (!isRealDate(+year, +month, +day) || !isRealTime(+hour, +minute, +second)) {
+    console.warn(`YaFT: ignoring "${value}", not a valid date or time`);
+    return undefined;
+  }
+
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) {
-    // Shape is right but the value is not a real instant, e.g. 2026-02-30.
     console.warn(`YaFT: ignoring "${value}", not a valid timestamp`);
     return undefined;
   }

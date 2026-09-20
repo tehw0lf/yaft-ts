@@ -173,10 +173,38 @@ describe('evaluate', () => {
       expect(evaluate(feature({ activeAt: value }), NOW)).toBe(true);
     });
 
-    it('ignores a well-formed but impossible date', () => {
-      expect(evaluate(feature({ activeAt: '2026-02-30T00:00:00Z' }), NOW)).toBe(
-        true
+    // Date.parse does not reject an impossible calendar date, it rolls it
+    // over: 2027-02-30 becomes 2027-03-02. The date must therefore be in the
+    // future, or the rolled-over value lands in the past and the activeAt
+    // check passes for the wrong reason.
+    it.each([
+      ['a day past the end of February', '2027-02-30T00:00:00Z'],
+      ['the 31st of a 30-day month', '2027-04-31T00:00:00Z'],
+      ['month 13', '2027-13-01T00:00:00Z'],
+      ['day zero', '2027-01-00T00:00:00Z'],
+      ['February 29 in a non-leap year', '2027-02-29T00:00:00Z'],
+      ['hour 24', '2027-01-01T24:00:00Z'],
+      ['minute 60', '2027-01-01T00:60:00Z'],
+    ])('ignores %s', (_label, value) => {
+      expect(evaluate(feature({ activeAt: value }), NOW)).toBe(true);
+      expect(parseTimestamp(value)).toBeUndefined();
+    });
+
+    it('accepts February 29 in a leap year', () => {
+      expect(parseTimestamp('2028-02-29T00:00:00Z')).toBe(
+        Date.parse('2028-02-29T00:00:00Z')
       );
+    });
+
+    // RFC 3339 permits second 60 for a leap second, but Date.parse returns
+    // NaN for it, so the value is ignored like any other unusable bound. The
+    // range check lets it through and the NaN guard catches it; asserted here
+    // so the two stay consistent.
+    it('ignores a leap second, which Date.parse cannot represent', () => {
+      expect(parseTimestamp('2026-12-31T23:59:60Z')).toBeUndefined();
+      expect(
+        evaluate(feature({ activeAt: '2026-12-31T23:59:60Z' }), NOW)
+      ).toBe(true);
     });
 
     it('never throws on malformed input', () => {
