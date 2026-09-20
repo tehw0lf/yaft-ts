@@ -1,5 +1,6 @@
 import axios from "axios";
 
+import { Clock, evaluate, systemClock } from "../evaluate";
 import { Feature, FeatureProvider } from "../FeatureToggle";
 
 export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
@@ -7,8 +8,14 @@ export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
   baseUUID: string;
   data: Record<string, Feature> = {};
   collectionHash = "";
+  private readonly clock: Clock;
 
-  constructor(apiUrl: string, baseUUID: string) {
+  /**
+   * @param clock source of the current time; override it to evaluate against a
+   *              fixed instant in tests
+   */
+  constructor(apiUrl: string, baseUUID: string, clock: Clock = systemClock) {
+    this.clock = clock;
     this.apiUrl = apiUrl;
     this.baseUUID = baseUUID;
     this.getCollectionHash(`${this.apiUrl}/collectionHash/${this.baseUUID}`);
@@ -58,30 +65,6 @@ export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
   }
 
   isEnabled(key: string): boolean {
-    const feature = this.data[key];
-
-    if (feature === undefined || feature === null) return false;
-
-    // First check: value must be "true"
-    if (feature.value !== "true") return false;
-
-    // Second check: if activeAt is set and in future, not yet active
-    if (feature.activeAt && feature.activeAt !== "") {
-      const activeTime = Date.parse(feature.activeAt);
-      if (!isNaN(activeTime) && Date.now() < activeTime) {
-        return false;
-      }
-    }
-
-    // Third check: if disabledAt is set and in past, already disabled
-    if (feature.disabledAt && feature.disabledAt !== "") {
-      const disabledTime = Date.parse(feature.disabledAt);
-      if (!isNaN(disabledTime) && Date.now() >= disabledTime) {
-        return false;
-      }
-    }
-
-    // All checks passed, feature is enabled
-    return true;
+    return evaluate(this.data[key], this.clock());
   }
 }

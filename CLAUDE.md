@@ -58,18 +58,31 @@ npx jest -t "test name"      # Run specific test by name pattern
 - Support both boolean and Feature data types
 - Fallback to empty configuration on file load errors
 
+**Evaluation Core (`src/evaluate.ts`)**
+- `evaluate(feature, now)` is the single definition of the evaluation rules
+- Providers call it instead of implementing the logic themselves; before this
+  existed, the feature providers each carried their own copy
+- `Clock` is a `() => number`; providers take one and default to `systemClock`,
+  so tests and the conformance adapter can pin `now`
+- `parseTimestamp` accepts only RFC 3339 with an offset and returns
+  `undefined` for anything else, warning rather than throwing
+
 ### Feature Data Model
 
 ```typescript
 type Feature = {
-  key: string;       // Unique feature identifier
-  value: string;     // Boolean value as string
-  activeAt: string;  // ISO date when feature becomes active
-  disabledAt: string; // ISO date when feature gets disabled
+  key: string;        // Unique feature identifier
+  value: string;      // Boolean value as string; only "true" is on
+  activeAt: string;   // RFC 3339 with offset, or empty
+  disabledAt: string; // RFC 3339 with offset, or empty
+  tags?: string[];
 }
 ```
 
 Features support time-based activation/deactivation logic evaluated at runtime.
+The window is half-open: `now == activeAt` is on, `now == disabledAt` is off.
+Dates without an offset are ignored, because languages disagree on how to read
+them and a feature would otherwise flip at a different instant per port.
 
 ### Decorator Behavior
 

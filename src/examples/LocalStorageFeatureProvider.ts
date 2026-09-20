@@ -1,9 +1,17 @@
+import { Clock, evaluate, systemClock } from "../evaluate";
 import { Feature, FeatureProvider } from "../FeatureToggle";
 
 export class LocalStorageFeatureProvider implements FeatureProvider<Feature> {
   data: Record<string, Feature> = {};
+  private readonly clock: Clock;
 
-  constructor(configPath: string) {
+  /**
+   * @param configPath path passed to `require()`
+   * @param clock source of the current time; override it to evaluate against a
+   *              fixed instant in tests
+   */
+  constructor(configPath: string, clock: Clock = systemClock) {
+    this.clock = clock;
     this.getConfig(configPath);
   }
 
@@ -18,30 +26,6 @@ export class LocalStorageFeatureProvider implements FeatureProvider<Feature> {
   }
 
   isEnabled(key: string): boolean {
-    const feature = this.data[key] as Feature;
-
-    if (feature === undefined || feature === null) return false;
-
-    // First check: value must be "true"
-    if (feature.value !== "true") return false;
-
-    // Second check: if activeAt is set and in future, not yet active
-    if (feature.activeAt && feature.activeAt !== "") {
-      const activeTime = Date.parse(feature.activeAt);
-      if (!isNaN(activeTime) && Date.now() < activeTime) {
-        return false;
-      }
-    }
-
-    // Third check: if disabledAt is set and in past, already disabled
-    if (feature.disabledAt && feature.disabledAt !== "") {
-      const disabledTime = Date.parse(feature.disabledAt);
-      if (!isNaN(disabledTime) && Date.now() >= disabledTime) {
-        return false;
-      }
-    }
-
-    // All checks passed, feature is enabled
-    return true;
+    return evaluate(this.data[key], this.clock());
   }
 }

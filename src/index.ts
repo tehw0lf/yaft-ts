@@ -4,3 +4,4 @@ export {
   FeatureToggleBase,
   FeatureProvider,
 } from "./FeatureToggle";
+export { Clock, evaluate, parseTimestamp, systemClock } from "./evaluate";
