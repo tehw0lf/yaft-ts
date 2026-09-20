@@ -94,8 +94,53 @@ export type Feature = {
   value: string;
   activeAt: string;
   disabledAt: string;
+  tags?: string[];
 };
 ```
+
+## Evaluation rules
+
+A feature is on when all of the following hold. `evaluate` is exported, so the
+rules can be applied directly to a feature without going through a provider.
+
+- The value is exactly `"true"`. `"TRUE"`, `"1"` and `""` are off -- the value
+  is stored as a string, and anything else would be a silent disagreement
+  between backend and client.
+- `activeAt` has passed, if set. The bound is inclusive: at exactly `activeAt`
+  the feature is on.
+- `disabledAt` has not been reached, if set. This bound is exclusive: at
+  exactly `disabledAt` the feature is off.
+
+A missing feature is off. Unset, `null` or unparseable dates are ignored rather
+than treated as an error, and never throw.
+
+### Date format
+
+Dates must be **RFC 3339 with an offset** (`2026-09-18T15:00:00Z` or
+`2026-09-18T15:00:00+02:00`). Anything else -- a bare date such as
+`2026-09-18`, or a timestamp without an offset -- is ignored and logged as a
+warning.
+
+This is stricter than `Date.parse`, on purpose: JavaScript reads a bare date as
+UTC midnight and an offset-less timestamp as local time, while most other
+languages read both as local. Accepting them would make a feature flip at a
+different instant depending on which client evaluated it.
+
+## Testing with a fixed time
+
+Both `Feature` providers take an optional clock, so a test can evaluate against
+a fixed instant instead of the current time:
+
+```ts
+import { LocalStorageFeatureProvider } from "./provider";
+
+const provider = new LocalStorageFeatureProvider(
+  "./test-feature.json",
+  () => Date.parse("2026-09-18T12:00:00Z")
+);
+```
+
+The clock defaults to the system time, so existing code needs no change.
 
 # Licenses
 
