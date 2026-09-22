@@ -41,8 +41,14 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
         return;
       }
 
-      // Only the value matters here: this provider has no time logic, so a
-      // feature collapses to whether its value is exactly "true".
+      // Only the value matters here. The boolean shape has no time logic by
+      // design (R21), so a feature collapses to whether its value is exactly
+      // "true" -- activeAt and disabledAt are dropped.
+      //
+      // That is a real trap when this provider is pointed at a backend that
+      // schedules toggles: the window is then enforced only by the backend's
+      // cron job, which lags by up to a minute, instead of being evaluated
+      // locally. Use ApiServiceFeatureProvider when the toggles carry dates.
       const features = normaliseCollection(response.data);
       this.data = {};
       for (const [key, feature] of Object.entries(features)) {

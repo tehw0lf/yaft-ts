@@ -46,7 +46,12 @@ export function normaliseFeature(raw: RawFeature): Feature {
     value: String(field(raw, 'value', 'Value') ?? ''),
     activeAt: date(field(raw, 'activeAt', 'ActiveAt')),
     disabledAt: date(field(raw, 'disabledAt', 'DisabledAt')),
-    tags: Array.isArray(tags) ? (tags as string[]) : [],
+    // Filtered rather than asserted: `as string[]` is a compile-time claim
+    // that a backend sending a mixed array would quietly break, handing
+    // callers a non-string through a field typed as string.
+    tags: Array.isArray(tags)
+      ? tags.filter((tag): tag is string => typeof tag === 'string')
+      : [],
   };
 }
 

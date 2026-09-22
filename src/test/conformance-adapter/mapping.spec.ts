@@ -50,6 +50,15 @@ describe('normaliseFeature', () => {
     });
   });
 
+  it('drops a tag that is not a string', () => {
+    // `Feature.tags` is typed string[]; asserting rather than filtering would
+    // hand a caller a number through a field that promises a string.
+    expect(
+      normaliseFeature({ key: 'f', value: 'true', tags: ['ok', 42, null, 'fine'] })
+        .tags
+    ).toEqual(['ok', 'fine']);
+  });
+
   it('reads the capitalised spelling older backends send', () => {
     expect(
       normaliseFeature({
