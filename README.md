@@ -12,7 +12,16 @@ This provides a client for YaFT which aims to bring simple feature toggles for M
 
 ## Installation
 
-`npm install --save @tehw0lf/yaft`
+```bash
+npm install @tehw0lf/yaft
+```
+
+The example API providers use axios and declare it as an optional peer
+dependency, so install it too if you use them:
+
+```bash
+npm install @tehw0lf/yaft axios
+```
 
 ## Initialization
 
