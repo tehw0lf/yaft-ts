@@ -100,6 +100,12 @@ export type Feature = {
 
 ## Evaluation rules
 
+These rules are not this library's own: they are
+[yaft-conformance](https://github.com/tehw0lf/yaft-conformance), the shared
+specification every YaFT implementation is checked against. This port passes
+the whole suite (see [Conformance](#conformance) below), so a feature evaluates
+identically here and in any other port.
+
 A feature is on when all of the following hold. `evaluate` is exported, so the
 rules can be applied directly to a feature without going through a provider.
 
@@ -141,6 +147,31 @@ const provider = new LocalStorageFeatureProvider(
 ```
 
 The clock defaults to the system time, so existing code needs no change.
+
+## Conformance
+
+The rules above are specified once, language-neutrally, in
+[yaft-conformance](https://github.com/tehw0lf/yaft-conformance), and this port
+is tested against that suite rather than only against its own expectations.
+
+The version is pinned in `conformance.lock`:
+
+```
+version=v1.1.0
+sha256=d83ff1c960ad29830c00b57727591da628f4323b777faea245f603565d1c9ae9
+```
+
+`npm test` fetches that release, verifies the checksum and unpacks it before
+Jest runs, so there is no separate step to forget and no way to get a green run
+against stale cases. Upgrading the suite is a one-line change to that file,
+visible in review.
+
+The checksum is not decoration: a Git tag can be moved, and without verifying
+the asset a port's tests could change with no diff at all.
+
+The adapter lives in `src/test/conformance-adapter/`. It fails loudly on a case
+whose `target`, `toggle` or `expected` it does not implement, rather than
+skipping it -- a silently skipped case is a rule that nothing enforces.
 
 # Licenses
 

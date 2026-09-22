@@ -34,14 +34,27 @@ export function FeatureToggle(key: string, fallback?: any) {
       // Method
       const originalMethod = descriptor.value;
 
+      // An async method must keep returning a promise when it is switched
+      // off, or `await` at the call site breaks on a plain undefined. The
+      // empty class shell below already makes this distinction; without it
+      // here, turning a feature off would throw inside unrelated code.
+      const isAsync =
+        originalMethod?.[Symbol.toStringTag] === "AsyncFunction";
+
       descriptor.value = function (...args: any[]) {
         const isEnabled = FeatureToggleBase.featureProvider.isEnabled(key);
         if (isEnabled) {
           return originalMethod.apply(this, args);
         } else {
-          return fallback !== undefined
-            ? fallback.apply(this, args as [])
-            : (() => {}).apply(this, args as []);
+          if (fallback !== undefined) {
+            const result = fallback.apply(this, args as []);
+            // A synchronous fallback on an async method would otherwise hand
+            // back a plain value, breaking the promise the signature
+            // advertises. Promise.resolve passes an existing promise through
+            // unchanged, so an async fallback is unaffected.
+            return isAsync ? Promise.resolve(result) : result;
+          }
+          return isAsync ? Promise.resolve() : undefined;
         }
       };
       return descriptor;
