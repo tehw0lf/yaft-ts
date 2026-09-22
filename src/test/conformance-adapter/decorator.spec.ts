@@ -284,6 +284,82 @@ function runClassCase(c: DecoratorCase): void {
 }
 
 /**
+ * Cases the shared suite does not cover yet.
+ *
+ * R18 says an async method switched off must still return a promise, but the
+ * suite only states that for the no-fallback path. A synchronous fallback on
+ * an async method has the same problem -- the signature promises a promise and
+ * the caller gets a plain value -- so it is pinned down here until the suite
+ * grows a case for it.
+ */
+describe('async fallback keeps the promise contract', () => {
+  let saved: FeatureProvider<unknown>;
+
+  beforeAll(() => {
+    saved = FeatureToggleBase.featureProvider;
+  });
+  afterAll(() => {
+    FeatureToggleBase.featureProvider = saved;
+  });
+
+  it('wraps a synchronous fallback for an async method', async () => {
+    install(false);
+
+    function syncFallback() {
+      return FALLBACK;
+    }
+
+    class Subject {
+      @FeatureToggle(KEY, syncFallback)
+      async run() {
+        return ORIGINAL;
+      }
+    }
+
+    const result = new Subject().run();
+
+    expect(result).toBeInstanceOf(Promise);
+    await expect(result).resolves.toBe(FALLBACK);
+  });
+
+  it('passes an async fallback through without double-wrapping', async () => {
+    install(false);
+
+    async function asyncFallback() {
+      return FALLBACK;
+    }
+
+    class Subject {
+      @FeatureToggle(KEY, asyncFallback)
+      async run() {
+        return ORIGINAL;
+      }
+    }
+
+    await expect(new Subject().run()).resolves.toBe(FALLBACK);
+  });
+
+  it('leaves the fallback of a synchronous method untouched', () => {
+    install(false);
+
+    function syncFallback() {
+      return FALLBACK;
+    }
+
+    class Subject {
+      @FeatureToggle(KEY, syncFallback)
+      run() {
+        return ORIGINAL;
+      }
+    }
+
+    // Not a promise: wrapping here would change the contract of every
+    // synchronous fallback.
+    expect(new Subject().run()).toBe(FALLBACK);
+  });
+});
+
+/**
  * The provider is missing, so decorating itself must fail.
  *
  * Deferring the error to the first call would turn a startup misconfiguration

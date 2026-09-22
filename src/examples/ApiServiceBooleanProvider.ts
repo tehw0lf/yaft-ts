@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { FeatureProvider } from "../FeatureToggle";
+import { normaliseCollection } from "../mapping";
 
 export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   apiUrl: string;
@@ -30,22 +31,22 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   async getConfig(configPathOrUrl: string): Promise<void> {
     try {
       const response = await axios.get(configPathOrUrl);
-      // Handle Go backend response format
-      const featuresArray = response.data.toggles || response.data.value || [];
-      
-      // Convert array to keyed boolean object and handle capitalized field names
+
+      // A keyed boolean object is already in this provider's shape and is
+      // taken as-is; anything else is a feature-shaped response and goes
+      // through the core normaliser, so the two providers cannot disagree
+      // about what a response means.
+      if (isKeyedBooleans(response.data)) {
+        this.data = response.data;
+        return;
+      }
+
+      // Only the value matters here: this provider has no time logic, so a
+      // feature collapses to whether its value is exactly "true".
+      const features = normaliseCollection(response.data);
       this.data = {};
-      if (Array.isArray(featuresArray)) {
-        featuresArray.forEach((feature: any) => {
-          const key = feature.key || feature.Key;
-          const value = feature.value || feature.Value;
-          if (key) {
-            this.data[key] = value === 'true' || value === true;
-          }
-        });
-      } else {
-        // Fallback for object format
-        this.data = featuresArray;
+      for (const [key, feature] of Object.entries(features)) {
+        this.data[key] = feature.value === 'true';
       }
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
@@ -57,4 +58,19 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
     if (feature === undefined || feature === null) return false;
     return feature;
   }
+}
+
+/**
+ * True when the payload is already `{ "myToggle": true }`.
+ *
+ * Distinguishing this from a feature-shaped response matters: running a keyed
+ * boolean object through the feature normaliser would look for a `key` field,
+ * find none and discard every entry.
+ */
+function isKeyedBooleans(data: unknown): data is Record<string, boolean> {
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    return false;
+  }
+  const values = Object.values(data as Record<string, unknown>);
+  return values.length > 0 && values.every((v) => typeof v === 'boolean');
 }

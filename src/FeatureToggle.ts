@@ -47,7 +47,12 @@ export function FeatureToggle(key: string, fallback?: any) {
           return originalMethod.apply(this, args);
         } else {
           if (fallback !== undefined) {
-            return fallback.apply(this, args as []);
+            const result = fallback.apply(this, args as []);
+            // A synchronous fallback on an async method would otherwise hand
+            // back a plain value, breaking the promise the signature
+            // advertises. Promise.resolve passes an existing promise through
+            // unchanged, so an async fallback is unaffected.
+            return isAsync ? Promise.resolve(result) : result;
           }
           return isAsync ? Promise.resolve() : undefined;
         }
