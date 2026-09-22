@@ -24,5 +24,9 @@ jobs:
       build_branch: "run build"
       build_main: "run build"
       artifact_path: "dist"
-      library_path: "dist"
+      # dist/yaft, not dist: the build writes the package there, and with
+      # library_path=dist the reusable workflow publishes from the repository
+      # root instead -- which is how 0.0.9 through 0.0.15 shipped raw src/
+      # with no entry points and could not be imported at all.
+      library_path: "dist/yaft"
       npm_audit_omit_dev: true
