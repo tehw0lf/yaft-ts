@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { FeatureProvider } from "../FeatureToggle";
-import { normaliseCollection } from "../mapping";
+import { normaliseBooleans, normaliseCollection } from "../mapping";
 
 export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   apiUrl: string;
@@ -37,7 +37,7 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
       // through the core normaliser, so the two providers cannot disagree
       // about what a response means.
       if (isKeyedBooleans(response.data)) {
-        this.data = response.data;
+        this.data = normaliseBooleans(response.data);
         return;
       }
 
@@ -60,9 +60,7 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   }
 
   isEnabled(key: string): boolean {
-    const feature = this.data[key];
-    if (feature === undefined || feature === null) return false;
-    return feature;
+    return this.data[key] === true;
   }
 }
 

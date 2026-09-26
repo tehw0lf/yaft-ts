@@ -129,6 +129,18 @@ rules can be applied directly to a feature without going through a provider.
 A missing feature is off. Unset, `null` or unparseable dates are ignored rather
 than treated as an error, and never throw.
 
+### Boolean shape
+
+The boolean providers hold `{ "myToggle": true }` and have no time logic. Only
+the JSON boolean `true` is on. Any other value -- `"true"`, `"false"`, `1`,
+`null` -- is dropped when the data loads, so the key reads as missing and is
+off. `normaliseBooleans` is exported and applies the same rule.
+
+**Changed in 0.0.17.** Before, `isEnabled` returned whatever was stored, and a
+caller testing it with `if` turned the string `"false"` **on**, because a
+non-empty string is truthy. A configuration that relied on string or number
+values has to switch to real booleans.
+
 ### Date format
 
 Dates must be **RFC 3339 with an offset** (`2026-09-18T15:00:00Z` or
@@ -166,8 +178,8 @@ is tested against that suite rather than only against its own expectations.
 The version is pinned in `conformance.lock`:
 
 ```
-version=v1.2.0
-sha256=6c46150f2bafa3941bd0d7fd370cc701cef4078fad786bd9f71a77bb83951e1d
+version=v2.0.0
+sha256=a10c1342e9ef346f998c0a819d90ae7f4984b53c933ed555eefab09419e993aa
 ```
 
 `npm test` fetches that release, verifies the checksum and unpacks it before

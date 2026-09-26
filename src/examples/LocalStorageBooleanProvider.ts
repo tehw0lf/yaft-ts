@@ -1,4 +1,5 @@
 import { FeatureProvider } from "../FeatureToggle";
+import { normaliseBooleans } from "../mapping";
 
 export class LocalStorageBooleanProvider implements FeatureProvider<boolean> {
   data: Record<string, boolean> = {};
@@ -9,8 +10,7 @@ export class LocalStorageBooleanProvider implements FeatureProvider<boolean> {
 
   getConfig(configPathOrUrl: string): void {
     try {
-      const configData = require(configPathOrUrl);
-      this.data = configData;
+      this.data = normaliseBooleans(require(configPathOrUrl));
     } catch (error) {
       console.error("Failed to load configuration from local file:", error);
       this.data = {};
@@ -18,8 +18,6 @@ export class LocalStorageBooleanProvider implements FeatureProvider<boolean> {
   }
 
   isEnabled(key: string): boolean {
-    const feature = this.data[key];
-    if (feature === undefined || feature === null) return false;
-    return feature;
+    return this.data[key] === true;
   }
 }
