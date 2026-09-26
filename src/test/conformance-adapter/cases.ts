@@ -12,6 +12,13 @@ import { join } from 'path';
 
 const CASES_DIR = join(__dirname, '..', 'conformance', 'cases');
 
+/**
+ * The case-file format versions this adapter implements. A file in any other
+ * format may carry a field this adapter never reads, which would leave a rule
+ * silently unenforced, so it is rejected instead.
+ */
+const FORMATS: Record<string, number> = { evaluation: 1, decorator: 1, mapping: 2 };
+
 /** A rule id from SPEC.md, such as `R5` or `R22a`. */
 export type Rule = string;
 
@@ -55,6 +62,8 @@ export interface MappingCase {
   shape: 'feature' | 'boolean';
   response: unknown;
   expected: Record<string, unknown>;
+  /** Boolean shape only: keys to ask isEnabled for, including absent ones. */
+  isEnabled?: Record<string, boolean>;
 }
 
 function load<T>(suite: string): CaseFile<T> {
@@ -71,6 +80,12 @@ function load<T>(suite: string): CaseFile<T> {
   const file = JSON.parse(readFileSync(path, 'utf8')) as CaseFile<T>;
   if (file.suite !== suite) {
     throw new Error(`${path} declares suite "${file.suite}", expected "${suite}"`);
+  }
+  if (file.version !== FORMATS[suite]) {
+    throw new Error(
+      `${path} is format version ${file.version}, but this adapter implements ` +
+        `version ${FORMATS[suite]}. Extend the adapter to the new format.`
+    );
   }
   return file;
 }

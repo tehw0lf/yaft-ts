@@ -166,8 +166,8 @@ is tested against that suite rather than only against its own expectations.
 The version is pinned in `conformance.lock`:
 
 ```
-version=v1.1.0
-sha256=d83ff1c960ad29830c00b57727591da628f4323b777faea245f603565d1c9ae9
+version=v1.2.0
+sha256=6c46150f2bafa3941bd0d7fd370cc701cef4078fad786bd9f71a77bb83951e1d
 ```
 
 `npm test` fetches that release, verifies the checksum and unpacks it before
