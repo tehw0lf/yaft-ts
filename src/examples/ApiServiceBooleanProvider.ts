@@ -65,16 +65,24 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
 }
 
 /**
- * True when the payload is already `{ "myToggle": true }`.
+ * True when the payload is in the boolean shape, `{ "myToggle": true }`.
  *
  * Distinguishing this from a feature-shaped response matters: running a keyed
  * boolean object through the feature normaliser would look for a `key` field,
  * find none and discard every entry.
+ *
+ * One boolean value is enough. A mixed payload such as
+ * `{ "a": true, "b": "x" }` is still the boolean shape; normaliseBooleans then
+ * drops `b` and keeps `a` (R29), exactly as the local provider does. Requiring
+ * every value to be boolean sent it to the feature normaliser instead, which
+ * lost `a` as well. Feature responses never carry a boolean -- `value` is a
+ * string -- so they are not caught by this.
  */
-function isKeyedBooleans(data: unknown): data is Record<string, boolean> {
+function isKeyedBooleans(data: unknown): boolean {
   if (data === null || typeof data !== 'object' || Array.isArray(data)) {
     return false;
   }
-  const values = Object.values(data as Record<string, unknown>);
-  return values.length > 0 && values.every((v) => typeof v === 'boolean');
+  return Object.values(data as Record<string, unknown>).some(
+    (v) => typeof v === 'boolean'
+  );
 }

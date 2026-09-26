@@ -132,8 +132,9 @@ than treated as an error, and never throw.
 ### Boolean shape
 
 The boolean providers hold `{ "myToggle": true }` and have no time logic. Only
-the JSON boolean `true` is on. Any other value -- `"true"`, `"false"`, `1`,
-`null` -- is dropped when the data loads, so the key reads as missing and is
+the JSON boolean `true` is on. A JSON `false` is kept in the data and reads as
+off. Any value that is not a boolean -- `"true"`, `"false"`, `1`, `null` -- is
+dropped when the data loads, so its key is missing from the data and reads as
 off. `normaliseBooleans` is exported and applies the same rule.
 
 **Changed in 0.0.17.** Before, `isEnabled` returned whatever was stored, and a
