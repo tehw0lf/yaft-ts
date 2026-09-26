@@ -1,5 +1,25 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { LocalStorageBooleanProvider } from '../../examples/LocalStorageBooleanProvider';
 import { normaliseCollection, normaliseFeature } from '../../mapping';
 import { mappingCases, title, unsupported } from './cases';
+
+/**
+ * The boolean-shape provider reads a JSON file, so each case's response is
+ * written to one first. Asking the provider -- rather than comparing the
+ * response with itself -- is what checks that a missing key is off (R21).
+ */
+function booleanProvider(response: unknown): LocalStorageBooleanProvider {
+  const dir = mkdtempSync(join(tmpdir(), 'yaft-conformance-'));
+  try {
+    const file = join(dir, 'boolean.json');
+    writeFileSync(file, JSON.stringify(response));
+    return new LocalStorageBooleanProvider(file);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 /**
  * Runs the shared mapping cases against this port.
@@ -22,11 +42,15 @@ describe('conformance: mapping', () => {
           expect(normaliseCollection(c.response)).toEqual(c.expected);
           break;
 
-        case 'boolean':
-          // The boolean shape is already keyed booleans; a provider stores it
-          // as-is and maps it straight onto isEnabled.
-          expect(c.response).toEqual(c.expected);
+        case 'boolean': {
+          const provider = booleanProvider(c.response);
+          expect(provider.data).toEqual(c.expected);
+          if (!c.isEnabled) throw new Error(`Case "${c.name}" has no isEnabled probes`);
+          for (const [key, enabled] of Object.entries(c.isEnabled)) {
+            expect({ key, enabled: provider.isEnabled(key) }).toEqual({ key, enabled });
+          }
           break;
+        }
 
         default:
           unsupported('shape', c.shape, c.name);

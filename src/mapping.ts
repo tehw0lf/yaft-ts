@@ -90,3 +90,22 @@ export function normaliseCollection(response: unknown): Record<string, Feature> 
   }
   return data;
 }
+
+/**
+ * Normalises a boolean-shape payload, `{ "myToggle": true }`.
+ *
+ * Only real booleans are kept (R29). Anything else is dropped, so its key
+ * reads as missing and therefore off. Keeping it and testing its truthiness
+ * would turn `"false"` on, since a non-empty string is truthy.
+ */
+export function normaliseBooleans(response: unknown): Record<string, boolean> {
+  if (response === null || typeof response !== 'object' || Array.isArray(response)) {
+    return {};
+  }
+
+  const data: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(response as Record<string, unknown>)) {
+    if (typeof value === 'boolean') data[key] = value;
+  }
+  return data;
+}
