@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { FeatureProvider } from "../FeatureToggle";
-import { normaliseBooleans, normaliseCollection } from "../mapping";
+import { normaliseBooleans, normaliseGroup } from "../mapping";
 
 export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   apiUrl: string;
@@ -19,9 +19,9 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
     try {
       const response = await axios.get(configPathOrUrl);
       const newHash = response.data.collectionHash || response.data.value;
-      if (this.collectionHash !== newHash) {
+      // Recorded only once the group has loaded, so a failed fetch is retried.
+      if (this.collectionHash !== newHash && (await this.loadGroup(`${this.apiUrl}/features/${this.baseUUID}`))) {
         this.collectionHash = newHash;
-        await this.getConfig(`${this.apiUrl}/features/${this.baseUUID}`);
       }
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
@@ -29,6 +29,11 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   }
 
   async getConfig(configPathOrUrl: string): Promise<void> {
+    await this.loadGroup(configPathOrUrl);
+  }
+
+  /** Loads the group and reports whether it did; on failure the data stays. */
+  private async loadGroup(configPathOrUrl: string): Promise<boolean> {
     try {
       const response = await axios.get(configPathOrUrl);
 
@@ -38,7 +43,7 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
       // about what a response means.
       if (isKeyedBooleans(response.data)) {
         this.data = normaliseBooleans(response.data);
-        return;
+        return true;
       }
 
       // Only the value matters here. The boolean shape has no time logic by
@@ -49,13 +54,19 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
       // schedules toggles: the window is then enforced only by the backend's
       // cron job, which lags by up to a minute, instead of being evaluated
       // locally. Use ApiServiceFeatureProvider when the toggles carry dates.
-      const features = normaliseCollection(response.data);
+      const features = normaliseGroup(response.data);
+      if (features === undefined) {
+        console.error("Ignoring a response that is not a toggle group:", response.data);
+        return false;
+      }
       this.data = {};
       for (const [key, feature] of Object.entries(features)) {
         this.data[key] = feature.value === 'true';
       }
+      return true;
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
+      return false;
     }
   }
 
