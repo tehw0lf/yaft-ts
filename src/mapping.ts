@@ -92,6 +92,32 @@ export function normaliseCollection(response: unknown): Record<string, Feature> 
 }
 
 /**
+ * Normalises a /features response, but only if it is recognisably a toggle
+ * group: a collection envelope -- an empty one is a valid empty group -- or a
+ * single toggle. Returns `undefined` for anything else.
+ *
+ * `normaliseCollection` turns null, an array, a proxy's error object or a
+ * collection whose entries are all unusable into `{}`. A provider storing that
+ * would switch every feature off without an error; this is what it should
+ * check instead. Unusable entries next to good ones are still skipped (R25).
+ */
+export function normaliseGroup(response: unknown): Record<string, Feature> | undefined {
+  if (response === null || typeof response !== 'object' || Array.isArray(response)) {
+    return undefined;
+  }
+  const data = normaliseCollection(response);
+  if (Object.keys(data).length > 0) return data;
+
+  const body = response as Record<string, unknown>;
+  const collection = Array.isArray(body['toggles'])
+    ? body['toggles']
+    : Array.isArray(body['value'])
+      ? body['value']
+      : undefined;
+  return collection !== undefined && collection.length === 0 ? data : undefined;
+}
+
+/**
  * Normalises a boolean-shape payload, `{ "myToggle": true }`.
  *
  * Only real booleans are kept (R29). Anything else is dropped, so its key

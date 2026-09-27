@@ -129,6 +129,16 @@ rules can be applied directly to a feature without going through a provider.
 A missing feature is off. Unset, `null` or unparseable dates are ignored rather
 than treated as an error, and never throw.
 
+### API providers and a failing backend
+
+`ApiServiceFeatureProvider` and `ApiServiceBooleanProvider` keep their data
+when a refresh fails — and, **since 0.0.18**, also when `/features` answers
+`200` with something that is not a toggle group (`null`, an array, a proxy's
+error page). Before, that replaced the data with nothing and switched every
+feature off. A failed fetch is now also retried on the next
+`getCollectionHash`; before, one failure stopped refreshing until the backend
+changed again. `normaliseGroup` is exported for providers of your own.
+
 ### Boolean shape
 
 The boolean providers hold `{ "myToggle": true }` and have no time logic. Only

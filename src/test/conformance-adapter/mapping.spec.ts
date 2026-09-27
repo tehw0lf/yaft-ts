@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { LocalStorageBooleanProvider } from '../../examples/LocalStorageBooleanProvider';
-import { normaliseCollection, normaliseFeature } from '../../mapping';
+import { normaliseCollection, normaliseFeature, normaliseGroup } from '../../mapping';
 import { mappingCases, title, unsupported } from './cases';
 
 /**
@@ -99,5 +99,20 @@ describe('normaliseFeature', () => {
       disabledAt: '',
       tags: ['beta'],
     });
+  });
+});
+
+describe('normaliseGroup', () => {
+  it.each([null, [], 'x', 1, { error: 'proxy says no' }, { toggles: [null] }, { value: [{ Value: 'true' }] }])(
+    'refuses %j, which is not a toggle group',
+    (response) => {
+      expect(normaliseGroup(response)).toBeUndefined();
+    }
+  );
+
+  it('accepts an empty group, a mixed collection and a single toggle', () => {
+    expect(normaliseGroup({ toggles: [] })).toEqual({});
+    expect(Object.keys(normaliseGroup({ toggles: [null, { key: 'k', value: 'true' }] }) ?? {})).toEqual(['k']);
+    expect(Object.keys(normaliseGroup({ key: 'solo', value: 'true' }) ?? {})).toEqual(['solo']);
   });
 });

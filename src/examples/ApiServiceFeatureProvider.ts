@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { Clock, evaluate, systemClock } from "../evaluate";
-import { normaliseCollection } from "../mapping";
+import { normaliseGroup } from "../mapping";
 import { Feature, FeatureProvider } from "../FeatureToggle";
 
 export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
@@ -26,9 +26,11 @@ export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
     try {
       const response = await axios.get(configPathOrUrl);
       const newHash = response.data.collectionHash || response.data.value;
-      if (this.collectionHash !== newHash) {
+      // The hash is recorded only once the group has loaded. Recording it
+      // first meant one failed fetch stopped every later refresh until the
+      // backend changed again.
+      if (this.collectionHash !== newHash && (await this.loadGroup(`${this.apiUrl}/features/${this.baseUUID}`))) {
         this.collectionHash = newHash;
-        await this.getConfig(`${this.apiUrl}/features/${this.baseUUID}`);
       }
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
@@ -36,13 +38,25 @@ export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
   }
 
   async getConfig(configPathOrUrl: string): Promise<void> {
+    await this.loadGroup(configPathOrUrl);
+  }
+
+  /** Loads the group and reports whether it did; on failure the data stays. */
+  private async loadGroup(configPathOrUrl: string): Promise<boolean> {
     try {
       const response = await axios.get(configPathOrUrl);
       // The mapping rules live in the core, next to the evaluation rules,
       // rather than being reimplemented per provider.
-      this.data = normaliseCollection(response.data);
+      const group = normaliseGroup(response.data);
+      if (group === undefined) {
+        console.error("Ignoring a response that is not a toggle group:", response.data);
+        return false;
+      }
+      this.data = group;
+      return true;
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
+      return false;
     }
   }
 
