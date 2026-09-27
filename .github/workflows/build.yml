@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: external workflow
-    uses: tehw0lf/workflows/.github/workflows/build-test-publish.yml@main
+    uses: tehw0lf/workflows/.github/workflows/build-test-publish.yml@fix/android-keystore-secret-attest-job
     permissions:
       actions: write
       attestations: write
