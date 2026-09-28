@@ -17,7 +17,7 @@ const CASES_DIR = join(__dirname, '..', 'conformance', 'cases');
  * format may carry a field this adapter never reads, which would leave a rule
  * silently unenforced, so it is rejected instead.
  */
-const FORMATS: Record<string, number> = { evaluation: 1, decorator: 1, mapping: 3 };
+const FORMATS: Record<string, number> = { evaluation: 1, decorator: 1, mapping: 4 };
 
 /** A rule id from SPEC.md, such as `R5` or `R22a`. */
 export type Rule = string;
@@ -66,6 +66,8 @@ export interface MappingCase {
    * arrives. Its presence makes the case a refresh (R30).
    */
   held?: Record<string, unknown>;
+  /** Refresh cases only: whether `response` must be rejected (R30, R32). */
+  rejected?: boolean;
   /** A further response under the same hash, and the data it must leave. */
   retry?: { response: unknown; expected: Record<string, unknown> };
   expected: Record<string, unknown>;
