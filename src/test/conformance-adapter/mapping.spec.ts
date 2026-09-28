@@ -79,6 +79,11 @@ describe('conformance: mapping', () => {
       switch (c.shape) {
         case 'feature':
           if (c.held) {
+            if (typeof c.rejected !== 'boolean') unsupported('rejected', String(c.rejected), c.name);
+            // R32 is not checked here: getCollectionHash only logs a failed
+            // refresh and reports nothing to its caller, so there is no
+            // outcome to compare with c.rejected. The data assertions below
+            // still run.
             const provider = await refreshOver(c.held, c.response);
             expect(provider.data).toEqual(c.expected);
             if (c.retry) {
