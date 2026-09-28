@@ -1,6 +1,8 @@
+import axios from 'axios';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { ApiServiceFeatureProvider } from '../../examples/ApiServiceFeatureProvider';
 import { LocalStorageBooleanProvider } from '../../examples/LocalStorageBooleanProvider';
 import { normaliseCollection, normaliseFeature, normaliseGroup } from '../../mapping';
 import { mappingCases, title, unsupported } from './cases';
@@ -21,6 +23,37 @@ function booleanProvider(response: unknown): LocalStorageBooleanProvider {
   }
 }
 
+jest.mock('axios');
+const mockedGet = axios.get as jest.MockedFunction<typeof axios.get>;
+
+const API = 'http://yaft.test';
+const GROUP = 'uuid';
+const HASH = `${API}/collectionHash/${GROUP}`;
+
+/** Answers the hash and the features the way the backend would. */
+function serve(hash: string, features: unknown): void {
+  mockedGet.mockImplementation(async (url: string) => ({
+    data: url === HASH ? { collectionHash: hash } : features,
+  }));
+}
+
+/**
+ * Runs a refresh case (R30) through the real API provider: `held` is served
+ * and loaded first, then `response` under a new hash. A body that is not a
+ * group fails the second refresh, which the provider logs; the data it leaves
+ * behind is what the case asserts.
+ */
+async function refreshOver(held: Record<string, unknown>, response: unknown): Promise<ApiServiceFeatureProvider> {
+  serve('held', { toggles: Object.values(held) });
+  const provider = new ApiServiceFeatureProvider(API, GROUP);
+  await provider.getCollectionHash(HASH);
+  expect(provider.data).toEqual(held);
+
+  serve('response', response);
+  await provider.getCollectionHash(HASH);
+  return provider;
+}
+
 /**
  * Runs the shared mapping cases against this port.
  *
@@ -35,11 +68,29 @@ describe('conformance: mapping', () => {
     expect(cases.length).toBeGreaterThan(0);
   });
 
+  beforeEach(() => jest.spyOn(console, 'error').mockImplementation(() => undefined));
+  afterEach(() => {
+    mockedGet.mockReset();
+    jest.restoreAllMocks();
+  });
+
   for (const c of cases) {
-    it(title(c), () => {
+    it(title(c), async () => {
       switch (c.shape) {
         case 'feature':
-          expect(normaliseCollection(c.response)).toEqual(c.expected);
+          if (c.held) {
+            const provider = await refreshOver(c.held, c.response);
+            expect(provider.data).toEqual(c.expected);
+            if (c.retry) {
+              // Same hash: a port that recorded it on the rejected body
+              // never fetches again (R30).
+              serve('response', c.retry.response);
+              await provider.getCollectionHash(HASH);
+              expect(provider.data).toEqual(c.retry.expected);
+            }
+          } else {
+            expect(normaliseCollection(c.response)).toEqual(c.expected);
+          }
           break;
 
         case 'boolean': {
