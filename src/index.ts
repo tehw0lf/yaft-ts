@@ -5,4 +5,4 @@ export {
   FeatureProvider,
 } from "./FeatureToggle";
 export { Clock, evaluate, parseTimestamp, systemClock } from "./evaluate";
-export { normaliseBooleans, normaliseCollection, normaliseFeature, normaliseGroup } from "./mapping";
+export { collectionHashOf, normaliseBooleans, normaliseCollection, normaliseFeature, normaliseGroup } from "./mapping";

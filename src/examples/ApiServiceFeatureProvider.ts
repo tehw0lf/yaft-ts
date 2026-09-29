@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { Clock, evaluate, systemClock } from "../evaluate";
-import { normaliseGroup } from "../mapping";
+import { collectionHashOf, normaliseGroup } from "../mapping";
 import { Feature, FeatureProvider } from "../FeatureToggle";
 
 export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
@@ -22,42 +22,59 @@ export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
     this.getCollectionHash(`${this.apiUrl}/collectionHash/${this.baseUUID}`);
   }
 
+  /**
+   * Fetches the group if it changed since the last successful refresh.
+   *
+   * Resolves to `true` when new data was loaded and `false` when the group was
+   * unchanged. Rejects when the backend cannot be reached or sends something
+   * that is not a hash or not a toggle group; the previous data stays (R32).
+   */
+  async refresh(): Promise<boolean> {
+    return this.refreshFrom(`${this.apiUrl}/collectionHash/${this.baseUUID}`);
+  }
+
+  /**
+   * Like {@link refresh}, but logs a failure instead of rejecting, for use
+   * from a timer. The previous data stays in place.
+   */
   async getCollectionHash(configPathOrUrl: string): Promise<void> {
     try {
-      const response = await axios.get(configPathOrUrl);
-      const newHash = response.data.collectionHash || response.data.value;
-      // The hash is recorded only once the group has loaded. Recording it
-      // first meant one failed fetch stopped every later refresh until the
-      // backend changed again.
-      if (this.collectionHash !== newHash && (await this.loadGroup(`${this.apiUrl}/features/${this.baseUUID}`))) {
-        this.collectionHash = newHash;
-      }
+      await this.refreshFrom(configPathOrUrl);
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
     }
   }
 
   async getConfig(configPathOrUrl: string): Promise<void> {
-    await this.loadGroup(configPathOrUrl);
-  }
-
-  /** Loads the group and reports whether it did; on failure the data stays. */
-  private async loadGroup(configPathOrUrl: string): Promise<boolean> {
     try {
-      const response = await axios.get(configPathOrUrl);
-      // The mapping rules live in the core, next to the evaluation rules,
-      // rather than being reimplemented per provider.
-      const group = normaliseGroup(response.data);
-      if (group === undefined) {
-        console.error("Ignoring a response that is not a toggle group:", response.data);
-        return false;
-      }
-      this.data = group;
-      return true;
+      this.data = await this.fetchGroup(configPathOrUrl);
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
-      return false;
     }
+  }
+
+  private async refreshFrom(hashUrl: string): Promise<boolean> {
+    const newHash = collectionHashOf((await axios.get(hashUrl)).data);
+    if (newHash === undefined) throw new Error(`GET ${hashUrl} sent no collectionHash`);
+    if (newHash === this.collectionHash) return false;
+    // The hash is recorded only once the group has loaded. Recording it
+    // first meant one failed fetch stopped every later refresh until the
+    // backend changed again.
+    this.data = await this.fetchGroup(`${this.apiUrl}/features/${this.baseUUID}`);
+    this.collectionHash = newHash;
+    return true;
+  }
+
+  /** Fetches the group, or rejects if the response is not one. */
+  private async fetchGroup(configPathOrUrl: string): Promise<Record<string, Feature>> {
+    const response = await axios.get(configPathOrUrl);
+    // The mapping rules live in the core, next to the evaluation rules,
+    // rather than being reimplemented per provider.
+    const group = normaliseGroup(response.data);
+    if (group === undefined) {
+      throw new Error(`GET ${configPathOrUrl} sent a body that is not a toggle group`);
+    }
+    return group;
   }
 
   isEnabled(key: string): boolean {

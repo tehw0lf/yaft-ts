@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { FeatureProvider } from "../FeatureToggle";
-import { normaliseBooleans, normaliseGroup } from "../mapping";
+import { collectionHashOf, normaliseBooleans, normaliseGroup } from "../mapping";
 
 export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   apiUrl: string;
@@ -15,59 +15,76 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
     this.getCollectionHash(`${this.apiUrl}/collectionHash/${this.baseUUID}`);
   }
 
+  /**
+   * Fetches the group if it changed since the last successful refresh.
+   *
+   * Resolves to `true` when new data was loaded and `false` when the group was
+   * unchanged. Rejects when the backend cannot be reached or sends something
+   * that is not a hash or not a toggle group; the previous data stays (R32).
+   */
+  async refresh(): Promise<boolean> {
+    return this.refreshFrom(`${this.apiUrl}/collectionHash/${this.baseUUID}`);
+  }
+
+  /**
+   * Like {@link refresh}, but logs a failure instead of rejecting, for use
+   * from a timer. The previous data stays in place.
+   */
   async getCollectionHash(configPathOrUrl: string): Promise<void> {
     try {
-      const response = await axios.get(configPathOrUrl);
-      const newHash = response.data.collectionHash || response.data.value;
-      // Recorded only once the group has loaded, so a failed fetch is retried.
-      if (this.collectionHash !== newHash && (await this.loadGroup(`${this.apiUrl}/features/${this.baseUUID}`))) {
-        this.collectionHash = newHash;
-      }
+      await this.refreshFrom(configPathOrUrl);
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
     }
   }
 
   async getConfig(configPathOrUrl: string): Promise<void> {
-    await this.loadGroup(configPathOrUrl);
-  }
-
-  /** Loads the group and reports whether it did; on failure the data stays. */
-  private async loadGroup(configPathOrUrl: string): Promise<boolean> {
     try {
-      const response = await axios.get(configPathOrUrl);
-
-      // A keyed boolean object is already in this provider's shape and is
-      // taken as-is; anything else is a feature-shaped response and goes
-      // through the core normaliser, so the two providers cannot disagree
-      // about what a response means.
-      if (isKeyedBooleans(response.data)) {
-        this.data = normaliseBooleans(response.data);
-        return true;
-      }
-
-      // Only the value matters here. The boolean shape has no time logic by
-      // design (R21), so a feature collapses to whether its value is exactly
-      // "true" -- activeAt and disabledAt are dropped.
-      //
-      // That is a real trap when this provider is pointed at a backend that
-      // schedules toggles: the window is then enforced only by the backend's
-      // cron job, which lags by up to a minute, instead of being evaluated
-      // locally. Use ApiServiceFeatureProvider when the toggles carry dates.
-      const features = normaliseGroup(response.data);
-      if (features === undefined) {
-        console.error("Ignoring a response that is not a toggle group:", response.data);
-        return false;
-      }
-      this.data = {};
-      for (const [key, feature] of Object.entries(features)) {
-        this.data[key] = feature.value === 'true';
-      }
-      return true;
+      this.data = await this.fetchGroup(configPathOrUrl);
     } catch (error) {
       console.error("Failed to fetch feature toggle from API:", error);
-      return false;
     }
+  }
+
+  private async refreshFrom(hashUrl: string): Promise<boolean> {
+    const newHash = collectionHashOf((await axios.get(hashUrl)).data);
+    if (newHash === undefined) throw new Error(`GET ${hashUrl} sent no collectionHash`);
+    if (newHash === this.collectionHash) return false;
+    // Recorded only once the group has loaded, so a failed fetch is retried.
+    this.data = await this.fetchGroup(`${this.apiUrl}/features/${this.baseUUID}`);
+    this.collectionHash = newHash;
+    return true;
+  }
+
+  /** Fetches the group, or rejects if the response is not one. */
+  private async fetchGroup(configPathOrUrl: string): Promise<Record<string, boolean>> {
+    const response = await axios.get(configPathOrUrl);
+
+    // A keyed boolean object is already in this provider's shape and is
+    // taken as-is; anything else is a feature-shaped response and goes
+    // through the core normaliser, so the two providers cannot disagree
+    // about what a response means.
+    if (isKeyedBooleans(response.data)) {
+      return normaliseBooleans(response.data);
+    }
+
+    // Only the value matters here. The boolean shape has no time logic by
+    // design (R21), so a feature collapses to whether its value is exactly
+    // "true" -- activeAt and disabledAt are dropped.
+    //
+    // That is a real trap when this provider is pointed at a backend that
+    // schedules toggles: the window is then enforced only by the backend's
+    // cron job, which lags by up to a minute, instead of being evaluated
+    // locally. Use ApiServiceFeatureProvider when the toggles carry dates.
+    const features = normaliseGroup(response.data);
+    if (features === undefined) {
+      throw new Error(`GET ${configPathOrUrl} sent a body that is not a toggle group`);
+    }
+    const data: Record<string, boolean> = {};
+    for (const [key, feature] of Object.entries(features)) {
+      data[key] = feature.value === 'true';
+    }
+    return data;
   }
 
   isEnabled(key: string): boolean {

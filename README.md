@@ -93,6 +93,29 @@ Otherwise, or if the feature does not exist, the class/method gets replaced with
 The default YaFT API provides a collection hash to efficiently check whether the locally cached features are still up to date. See API provider examples for details.
 This can be scheduled to automatically update feature data in the background.
 
+**Since 0.0.21** the API providers have two ways to refresh:
+
+- `refresh()` reports the outcome. It resolves to `true` when new data was
+  loaded and `false` when the group was unchanged, and rejects when the backend
+  cannot be reached or answers with something that is not a hash or not a
+  toggle group. The previous data stays in place either way.
+- `getCollectionHash(url)` is the quiet variant for timers: it logs a failure
+  instead of rejecting.
+
+```typescript
+const provider = new ApiServiceFeatureProvider(apiUrl, groupUuid);
+
+// At startup, or wherever a failure should be seen:
+await provider.refresh();
+
+// In the background:
+setInterval(() => provider.getCollectionHash(`${apiUrl}/collectionHash/${groupUuid}`), 60_000);
+```
+
+A `/collectionHash` answer without a hash now fails the refresh. Before, it was
+recorded as `undefined`, which matched every later answer without one, so the
+provider stopped refreshing without saying so.
+
 ## Feature Data Type
 
 The default data type for YaFT is `Feature`. A feature has a key string, a value string representing a boolean and optional activeAt and disabledAt date strings.

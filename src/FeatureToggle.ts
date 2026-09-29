@@ -16,7 +16,13 @@ export interface FeatureProvider<T> {
   apiUrl?: string;
   baseUUID?: string;
   data: Record<string, T>;
+  /** Refreshes quietly: a failure is logged, not reported. For timers. */
   getCollectionHash?(configPathOrUrl: string): void;
+  /**
+   * Refreshes and reports the outcome (R32): resolves to whether new data was
+   * loaded, rejects if the refresh failed. The data stays on failure.
+   */
+  refresh?(): Promise<boolean>;
   getConfig(configPathOrUrl: string): void;
   isEnabled(key: string): boolean;
 }
