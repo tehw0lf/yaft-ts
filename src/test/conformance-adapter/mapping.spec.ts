@@ -50,7 +50,9 @@ async function refreshOver(
 ): Promise<ApiServiceFeatureProvider> {
   serve('held', { toggles: Object.values(held) });
   const provider = new ApiServiceFeatureProvider(API, GROUP);
-  await expect(provider.refresh()).resolves.toBe(true);
+  // The constructor already loads `held`; this waits for it and then finds
+  // the hash unchanged.
+  await expect(provider.refresh()).resolves.toBe(false);
   expect(provider.data).toEqual(held);
 
   serve('response', response);

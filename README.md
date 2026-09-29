@@ -102,6 +102,11 @@ This can be scheduled to automatically update feature data in the background.
 - `getCollectionHash(url)` is the quiet variant for timers: it logs a failure
   instead of rejecting.
 
+Refreshes run one after another. The constructor already starts one, so a
+`refresh()` right after it waits for that one and then usually resolves to
+`false`: the group is loaded and unchanged. If the constructor's refresh
+failed, this one tries again and rejects if it fails too.
+
 ```typescript
 const provider = new ApiServiceFeatureProvider(apiUrl, groupUuid);
 

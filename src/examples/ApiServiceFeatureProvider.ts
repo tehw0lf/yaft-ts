@@ -9,6 +9,7 @@ export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
   baseUUID: string;
   data: Record<string, Feature> = {};
   collectionHash = "";
+  private refreshing: Promise<unknown> = Promise.resolve();
   private readonly clock: Clock;
 
   /**
@@ -53,7 +54,18 @@ export class ApiServiceFeatureProvider implements FeatureProvider<Feature> {
     }
   }
 
-  private async refreshFrom(hashUrl: string): Promise<boolean> {
+  /**
+   * Runs refreshes one after another. The constructor starts one without
+   * waiting, so a caller's refresh() right after it ran alongside: the older
+   * one could finish last and overwrite the newer data and hash.
+   */
+  private refreshFrom(hashUrl: string): Promise<boolean> {
+    const run = this.refreshing.then(() => this.refreshNow(hashUrl));
+    this.refreshing = run.catch(() => undefined);
+    return run;
+  }
+
+  private async refreshNow(hashUrl: string): Promise<boolean> {
     const newHash = collectionHashOf((await axios.get(hashUrl)).data);
     if (newHash === undefined) throw new Error(`GET ${hashUrl} sent no collectionHash`);
     if (newHash === this.collectionHash) return false;

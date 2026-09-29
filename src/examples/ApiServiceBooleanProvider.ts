@@ -8,6 +8,7 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
   baseUUID: string;
   data: Record<string, boolean> = {};
   collectionHash = "";
+  private refreshing: Promise<unknown> = Promise.resolve();
 
   constructor(apiUrl: string, baseUUID: string) {
     this.apiUrl = apiUrl;
@@ -46,7 +47,14 @@ export class ApiServiceBooleanProvider implements FeatureProvider<boolean> {
     }
   }
 
-  private async refreshFrom(hashUrl: string): Promise<boolean> {
+  /** Runs refreshes one after another; see ApiServiceFeatureProvider. */
+  private refreshFrom(hashUrl: string): Promise<boolean> {
+    const run = this.refreshing.then(() => this.refreshNow(hashUrl));
+    this.refreshing = run.catch(() => undefined);
+    return run;
+  }
+
+  private async refreshNow(hashUrl: string): Promise<boolean> {
     const newHash = collectionHashOf((await axios.get(hashUrl)).data);
     if (newHash === undefined) throw new Error(`GET ${hashUrl} sent no collectionHash`);
     if (newHash === this.collectionHash) return false;

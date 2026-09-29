@@ -125,6 +125,32 @@ describe.each(Object.entries(providers))('%s', (_name, make) => {
     });
   });
 
+  // Found by CodeRabbit on #29: the constructor's refresh is not awaited, so a
+  // refresh() right after it ran alongside and could be overwritten by it.
+  it('runs refreshes one after another', async () => {
+    let release!: () => void;
+    const slow = new Promise<void>((resolve) => (release = resolve));
+    let hash = 'h1';
+    mockedGet.mockImplementation(async (url: string) => {
+      if (url === HASH) return { data: { collectionHash: hash } };
+      if (hash === 'h1') {
+        await slow;
+        return { data: group('true') };
+      }
+      return { data: group('false') };
+    });
+
+    const provider = make(); // starts loading h1, held up in /features
+    await Promise.resolve();
+    hash = 'h2';
+    const newer = provider.refresh();
+    release();
+
+    await expect(newer).resolves.toBe(true);
+    expect(provider.isEnabled('k')).toBe(false);
+    await expect(provider.refresh()).resolves.toBe(false);
+  });
+
   it('getCollectionHash logs a failure instead of rejecting', async () => {
     const provider = await loaded(make);
     serve('h2', { error: 'proxy says no' });
