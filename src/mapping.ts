@@ -30,10 +30,15 @@ function field(raw: RawFeature, lower: string, upper: string): unknown {
 }
 
 /**
- * Normalises a date field. The backend sends `null` for an unset bound and
- * local fixtures use `""`; both mean "no bound", and `evaluate` ignores either.
+ * A string field, or `''` for anything that is not a string (R33).
+ *
+ * `key` and `value` are strings; JSON booleans belong in the boolean shape.
+ * `String(true)` would turn `"value": true` into `"true"` and the feature on,
+ * so a non-string is not set instead: the value is off and an entry without a
+ * string key is skipped (R25). The backend sends `null` for an unset bound and
+ * local fixtures use `""`; both mean "no bound" (R24).
  */
-function date(value: unknown): string {
+function text(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
@@ -42,10 +47,10 @@ export function normaliseFeature(raw: RawFeature): Feature {
   const tags = field(raw, 'tags', 'Tags');
 
   return {
-    key: String(field(raw, 'key', 'Key') ?? ''),
-    value: String(field(raw, 'value', 'Value') ?? ''),
-    activeAt: date(field(raw, 'activeAt', 'ActiveAt')),
-    disabledAt: date(field(raw, 'disabledAt', 'DisabledAt')),
+    key: text(field(raw, 'key', 'Key')),
+    value: text(field(raw, 'value', 'Value')),
+    activeAt: text(field(raw, 'activeAt', 'ActiveAt')),
+    disabledAt: text(field(raw, 'disabledAt', 'DisabledAt')),
     // Filtered rather than asserted: `as string[]` is a compile-time claim
     // that a backend sending a mixed array would quietly break, handing
     // callers a non-string through a field typed as string.
