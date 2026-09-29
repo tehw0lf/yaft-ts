@@ -135,6 +135,11 @@ export type Feature = {
 };
 ```
 
+**Changed in 0.0.22.** A response whose `key` or `value` is not a string, such
+as `"value": true`, no longer has it converted with `String()`: the field is
+not set, so the feature is off and an entry without a string key is skipped.
+JSON booleans belong in the boolean providers.
+
 ## Evaluation rules
 
 These rules are not this library's own: they are
