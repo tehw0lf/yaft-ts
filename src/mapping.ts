@@ -135,3 +135,21 @@ export function normaliseBooleans(response: unknown): Record<string, boolean> {
   }
   return data;
 }
+
+/**
+ * Reads the hash from a /collectionHash response, or returns `undefined` if
+ * it carries none.
+ *
+ * Reading `response.collectionHash || response.value` without checking let a
+ * proxy's error page through as `undefined`. Once recorded, `undefined` matched
+ * every later answer without a hash, and the provider stopped refreshing
+ * without saying so.
+ */
+export function collectionHashOf(response: unknown): string | undefined {
+  if (response === null || typeof response !== 'object' || Array.isArray(response)) {
+    return undefined;
+  }
+  const body = response as Record<string, unknown>;
+  const hash = 'collectionHash' in body ? body['collectionHash'] : body['value'];
+  return typeof hash === 'string' && hash !== '' ? hash : undefined;
+}

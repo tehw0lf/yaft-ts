@@ -39,18 +39,28 @@ function serve(hash: string, features: unknown): void {
 
 /**
  * Runs a refresh case (R30) through the real API provider: `held` is served
- * and loaded first, then `response` under a new hash. A body that is not a
- * group fails the second refresh, which the provider logs; the data it leaves
- * behind is what the case asserts.
+ * and loaded first, then `response` under a new hash. The second refresh must
+ * fail exactly when the case says the response is rejected (R32); the data it
+ * leaves behind is what the case asserts.
  */
-async function refreshOver(held: Record<string, unknown>, response: unknown): Promise<ApiServiceFeatureProvider> {
+async function refreshOver(
+  held: Record<string, unknown>,
+  response: unknown,
+  rejected: boolean
+): Promise<ApiServiceFeatureProvider> {
   serve('held', { toggles: Object.values(held) });
   const provider = new ApiServiceFeatureProvider(API, GROUP);
-  await provider.getCollectionHash(HASH);
+  // The constructor already loads `held`; this waits for it and then finds
+  // the hash unchanged.
+  await expect(provider.refresh()).resolves.toBe(false);
   expect(provider.data).toEqual(held);
 
   serve('response', response);
-  await provider.getCollectionHash(HASH);
+  if (rejected) {
+    await expect(provider.refresh()).rejects.toThrow();
+  } else {
+    await expect(provider.refresh()).resolves.toBe(true);
+  }
   return provider;
 }
 
@@ -80,17 +90,13 @@ describe('conformance: mapping', () => {
         case 'feature':
           if (c.held) {
             if (typeof c.rejected !== 'boolean') unsupported('rejected', String(c.rejected), c.name);
-            // R32 is not checked here: getCollectionHash only logs a failed
-            // refresh and reports nothing to its caller, so there is no
-            // outcome to compare with c.rejected. The data assertions below
-            // still run.
-            const provider = await refreshOver(c.held, c.response);
+            const provider = await refreshOver(c.held, c.response, c.rejected);
             expect(provider.data).toEqual(c.expected);
             if (c.retry) {
               // Same hash: a port that recorded it on the rejected body
               // never fetches again (R30).
               serve('response', c.retry.response);
-              await provider.getCollectionHash(HASH);
+              await expect(provider.refresh()).resolves.toEqual(expect.any(Boolean));
               expect(provider.data).toEqual(c.retry.expected);
             }
           } else {
